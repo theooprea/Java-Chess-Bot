@@ -1,0 +1,35 @@
+locale = LC_CTYPE=en_US.UTF-8;LC_NUMERIC=ro_RO.UTF-8;LC_TIME=ro_RO.UTF-8;LC_COLLATE=C;LC_MONETARY=ro_RO.UTF-8;LC_MESSAGES=en_US.UTF-8;LC_PAPER=ro_RO.UTF-8;LC_NAME=ro_RO.UTF-8;LC_ADDRESS=ro_RO.UTF-8;LC_TELEPHONE=ro_RO.UTF-8;LC_MEASUREMENT=ro_RO.UTF-8;LC_IDENTIFICATION=ro_RO.UTF-8
+recognized 'normal' (-1) as variant normal
+recognized 'normal' (-1) as variant normal
+recognized 'normal' (-1) as variant normal
+shuffleOpenings = 0
+shuffleOpenings = 0
+Version: xboard 4.9.1 + make ()
+Reset(1, 0) from gameMode 0
+recognized 'normal' (-1) as variant normal
+GameEnds(0, (null), 2)
+shuffleOpenings = 0
+StartChildProcess (dir=".") make run
+232 >first : xboard
+protover 2
+240 <first : javac *.java
+2471 <first : java Main
+2591 <first : Error: LinkageError occurred while loading main class Main
+2591 <first : 	java.lang.UnsupportedClassVersionError: Main has been compiled by a more recent version of the Java Runtime (class file version 55.0), this version of the Java Runtime only recognizes class file versions up to 54.0
+2598 <first : make: *** [Makefile:4: run] Error 1
+10233 >first : new
+random
+10233 >first : level 40 5 0
+10233 >first : post
+10233 >first : hard
+nps: w=-1, b=-1
+nps: w=-1, b=-1
+14729 >first : time 30000
+14731 >first : otim 30000
+book hit = (NULL)
+14732 >first : d2d4
+GameEnds(27, Error writing to first chess program, 2)
+Interrupting first
+16209 >first : result 0-1 {Error writing to first chess program}
+16209 >first : force
+16209 >first : quit

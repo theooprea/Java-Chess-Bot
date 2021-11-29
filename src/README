@@ -1,0 +1,295 @@
+Faraonii de la ACS
+
+--------------- Etapa 1 ---------------
+
+Membrii: Bejan Alexandru-Gabriel, Oprea Theodor-Alin
+         Verna Dorian-Alexandru, Vîrtan Răzvan-Nicolae
+
+--------------------------------------------------------------------------------
+1) Instrucțiuni de compilare
+Pentru testare, e suficientă dezarhivarea și rularea xboard -fcp "make run" -debug.
+
+--------------------------------------------------------------------------------
+2) Structura proiectului
+
+*** Acțiunile propriu-zise
+Coordonarea acțiunilor și realizarea comenzilor este implementată în cadrul clasei
+Main. Aici, primim comenzi până la ieșirea din joc. În funcție de comanda primită,
+trimitem comenzi la stdout (către xboard) și/sau realizăm anumite modificări la
+nivelul reprezentării interne a board-ului.
+
+*** Reprezentarea pieselor
+Clasa abstractă "Piece" conține câmpuri care oferă informații despre tipul piesei (pion,
+regină etc.), culoare și poziția curentă. Piesele propriu-zise vor fi reprezentate
+fiecare printr-o clasă ce extinde "Piece". Acestea vor conține propria implementare
+a metodei "move()", în funcție de tipul piesei. Metoda "move()" din clasele care
+extind "Piece" are rolul de a afla mutările valide cele mai avantajoase pentru o
+anumită piesă și de a apela apoi metoda "move()" din clasa "Board", care realizează
+actualizarea tablei interne și trimite comanda de mutare la xboard.
+
+Am ales acest mod de organizare deoarece la următoarele etape vom putea introduce
+mutări specifice tuturor pieselor adăugând cod într-un singur loc al proiectului
+(funcția "move()"), pentru orice piesă adăgată.
+
+*** Reprezentarea internă a board-ului
+Clasa "Board()" (implementată folosind DP-ul Singleton) reține practic starea
+curentă a jocului. Astfel, avem 2 liste, cu piesele albe și negre (care se modifică
+atunci când adăugăm o regină sau eliminăm o piesă din joc) și o matrice cu obiecte
+de tip "Piece", care oferă practic reprezentarea internă a tablei de joc.
+Pe lângă funcțiile de inițializare, această clasă conține metoda "nextMove()",
+care dă resign atunci când nu mai avem mutări valide și o funcție "move()" care
+face practic legătura între logica de la nivel de piese, comenzile trimise xboard-ului
+și actualizarea tablei de joc interne.
+--------------------------------------------------------------------------------
+3) Abordarea algoritmică
+
+Pentru această etapă, am realizat doar mutările pentru pionul din fața reginei.
+
+De fiecare dată când este nevoie de o mutare a bot-ului, acesta încearcă să găsească
+mutări valide pentru pionul ales, prin intermediul metodei "move()" din clasa "Pawn".
+De remarcat că această metodă implementează posibilitatea de a căuta mutări valide
+pentru orice pion (lucru util pentru etapele următoare).
+
+Astfel, încercăm mai întâi să mutăm pe diagonale (verificăm dacă exită piese
+pe care le putem lua) și tratăm separat cazurile în care suntem pe coloanele
+din margine (pentru a nu ieși din xboard). Dacă nu putem face astfel de mutări,
+verificăm dacă suntem la prima mutare a pionului și putem muta 2 poziții în
+față, iar dacă nu încercăm să mutăm o singură poziție.
+
+În cazul în care putem muta, vom apela "move()" din Board, pentru a trimite
+comanda xboard-ului și a actualiza intern starea tablei de joc. Dacă nu putem
+muta, dăm resgin. Pentru a muta doar cu pionii din fața reginei, reținem în clasa
+board câmpurile "stage_one_black_pawn" și "stage_one_white_pawn", care vor fi
+legate la aceștia.
+
+Complexitatea realizării unei mutări la această etapă este O(1) (avem practic
+timp constant, verificăm mereu 3 cazuri care au costul O(1) ).
+
+***Cazuri în care dăm resign
+(stabilite conform regulilor etapei și discuțiilor de pe forum):
+    - Pionul cu care mutăm nu mai are mișcări valide
+    - Pionul cu care mutăm se transformă în regină
+    - Pionul cu care mutăm este luat de o piesă a oponentului
+--------------------------------------------------------------------------------
+4) Surse de inspirație
+https://www.gnu.org/software/xboard/engine-intf.html
+--------------------------------------------------------------------------------
+5) Responsabilități în echipă (la această etapă)
+
+Theo Oprea: - Realizarea arhitecturii aplicației (board și piese)
+            - Implementarea comenzilor xboard, protover, feature
+            - Logica pentru mutarea pionului (metoda "move()" din "Pawn")
+
+Dorian Verna: - Realizarea comenzilor new, force, quit
+              - Logica pentru mutarea pionului (metoda "move()" din "Pawn")
+              - Realizarea arhivei + Makefile care să treacă autograding-ul din github
+
+Alex Bejan: - Comanda go (implementare + debugging la combinarea cu force)
+            - Debugging pe interfața dintre logica mutării din piese și mutarea
+            efectivă în board și xboard
+            - Refactoring
+
+Răzvan Vîrtan: - Utilizarea feature-urilor Project + Issues din github
+               - Refactoring
+               - README
+
+--------------- Etapa 2 ---------------
+
+1) Instrucțiuni de compilare
+
+Pentru testare e suficientă dezarhivarea arhivei pentru etapa 2 și rularea comenzii
+`xboard -fcp "make run" -debug`
+
+Note!! Pentru a functiona promovarea pieselor trebuie debifata optiunea  “Almost
+always queen” din options -> general din xboard!!
+
+2) Structura proiectului
+
+Structura este similară cu cea de la etapa 1, cu o singură modificare pe care o vom
+detalia aici. La etapa 1 ne propuneam să deplasăm doar un pion, ceea ce însemna că
+puteam să trimitem mutarea către board direct din metoda `move()` a clasei `Pawn`
+(practic, la etapa precedentă apelam metoda `move()` din clasa `Board` în cadrul
+metodei `move()` din clasa `Pawn`).
+
+Cum la această etapă dorim să avem la dispoziția mutările tuturor pieselor, nu mai
+putem să decidem ce mutare facem la nivelul unei singure piese, decizia mutându-se
+în cadrul metodei `move()` din clasa `Board`. Practic, clasele pentru fiecare piesă
+vor conține o metodă cu semnătura :
+
+`public void move(ArrayList<String> moves)`
+, care va adăuga la lista de comenzi `move` mutările ce pot fi făcute de această piesă.
+
+Astfel, în metoda `nextMove()` din clasa `Board` vom obține toate mutările posibile
+pentru toate piesele rămase în joc și vom selecta una dintre ele, aleator (vom selecta
+mereu rocada dacă e posibilă și nu vom selecta mutări care ne duc în șah).
+
+3) Abordarea algoritmică
+
+   a) Generarea mutărilor posibile pentru fiecare piesă
+Practic, am realizat aceeași pași pe care i-am folosit în cazul pionilor la etapa
+precedentă. La fiecare piesă, am parcurs toate pozițiile pe care le-am putea atinge cu
+piesa noastră, care nu ne-ar duce în șah și care nu sunt deja ocupate de o altă piesă
+de culoarea noastră. Pentru eficientă, la piese de tipul tură, regină, nebun care nu
+pot sări peste piese de aceeași culoare (cum face calul), dacă pe o anumită direcție
+de mers am întâlnit o piesă de culoarea noastră, nu mai mergem mai departe cu căutarea
+si trecem la o altă direcție pe tabla de joc. De asemenea, în cazul regelui am adăugat
+la lista mutărilor posibile și rocada (vezi mai jos). Pentru acest pas, avem maxim 16
+piese de analizat. Numărul de mutări care poate fi realizat de fiecare piesă poate fi
+maximizat de numărul de mutări ale unei regine plasate în centrul unei table de joc
+goale, adică 28. Astfel, complexitatea căutării tuturor mutărilor posibile când e
+rândul nostru la mutare se realizează în O(16*28) = O(1) timp constant.
+
+   b) En-passant
+Mutarile pentru realizarea regulii En-passant le-am implementat in cadrul fisierului
+Pawn.java. Practic, acestea sunt facute exact pe modelul in care sunt facute si
+mutarile simple ale pionului, cu exceptia ca am adaugat un camp nou in clasa Pawn
+care este setat pe 1 atunci cand pionul poate fi luat prin En-passant si pe 0 cand
+nu poate fi luat. Ideea este ca imediat ce un pion muta doua casute inainte,
+variabila se seteaza pe 1. In orice alt caz, variabilele tuturor pionilor se fac 0 si
+atunci acesti pioni nu mai pot fi luati prin En-passant. Am adaugat si doua functii in
+clasa Pawn pentru a manipula mai usor acest field al clasei. De asemenea, a trebuit sa
+modific si metoda update a clasei Board pentru a trata cazul En-passant, aici sterg
+piesa pe care doresc sa o iau, updatez board-ul si reinitializez cu 0 toate varaibilele
+enPassant. De asemenea, de fiecare data cand verific daca se poate face En-passant si
+adaug in ArrayList-ul de mutari mutarea respectiva trebuie sa verific in doua randuri
+daca starea viitoare a jocului presupune un sah la regele meu. Astfel, mutarea de
+En-passant presupune o mutare pe orizontala si apoi una pe verticala pentru corectitudine,
+functionalitatea fiind cea buna.
+
+   c) Rocada
+In cadrul functiei move a regelui consider cele 4 cazuri de rocada, 2 pentru alb si 2
+pentru negru, rocada mica si rocada mare. Pentru ca o rocada sa fie valabila (in functie
+de culoarea si tipul acesteia, mica sau mare) verific urmatoarele lucruri: pe
+pozitia presupusei ture sa existe o piesa, sa fie de tipul tura, sa aibe aceiasi culoare,
+ca regerele sa fie rocadabil(sa nu se fi mutat / primit sah), ca tura aleasa sa nu se fi
+miscat pana atunci iar casutele dintre rege si tura sa fie goale
+
+   d) Generarea unei stări viitoare a jocului
+Funcția "generateNextBoard(Piece[][] board, String move)" este utilizata pentru a genera
+o nouă etapă a jocului, returnând o matrice ce conține copii ale pieselor din matricea
+originală (board), asupra cărora s-a aplicat o mișcare (mișcările sunt executate direct
+și funcția se așteaptă sa primeasca mișcări valide). Pentru a putea copia corect fiecare
+piesă, am creat o metodă abstractă în clasa Piece, care este definită ulterior în fiecare
+piesă, având grijă să se instanțieze corespunzător toți parametrii. Metoda verifică și
+dacă un pion este pe penultimul rând ce corespunde culorii lui și gestionează și
+schimbarea acestuia conform celui de-al cincilea caracter din Stringul move(q - Regină,
+r - Tură, p = Pion, n - Cal, b - Nebun).
+
+   e) Verificarea stării de șah la căutarea mutărilor posibile
+Funcția checkChess(Piece[][] chessBoard, int color) primește o matrice de piese și o
+culoare și verifică dacă regele de culoarea specificată se află în șah. Verificarea se
+face succesiv pe diagonale, pe verticala și orizontala ce intersectează poziția regelui,
+iar mai apoi pentru cazurile pentru mișcărilor calului și cazul în care regele primește
+șah de la celălalt rege.
+
+   f) Selecția mutării curente în Board și update-ul reprezentării interne
+In cadrul functiei nextMove din Board iteram prin piesele de culoare data ca parametru
+iar pentru fiecare piesa adunam la vectorul de mutari toate mutarile posibile pt piesa
+respectiva si alegem la final una random. Tinem cont de urmatoarele aspecte: daca regele
+primeste sah ii marchez variabila de rocada in false, daca apare o mutare de rocada o
+fac automat iar daca nu sunt mutari posibile afisam resign.
+
+   g) Promovarea pieselor
+In cadrul functiei update se primeste o comanda de lungime 5 doar verific ca piesa de
+pe pozitia initiala sa fie pion si in functie de culoarea lui, verific ca pozitia de
+final sa fie pe linia opusa. Apoi in functie de ultimul caracter (q/r/n/b) elimin
+pionul de pe board si adaug o piesa, regina, tura, cal sau nebun (daca este tura ii
+setez variabila rockadable pe false).
+
+
+4) Surse de inspirație
+
+Pe lângă documentația oficială xboard, utilizată și la etapa 1, am folosit următoarele
+resurse pentru a ne documenta referitor la anumite reguli:
+*** https://ro.wikipedia.org/wiki/Rocad%C4%83
+*** https://en.wikipedia.org/wiki/En_passant
+
+5) Responsabilități în echipă
+Alexandru-Gabriel Bejan: - generarea unei stări viitoare a board-ului/jocului
+                         - verificarea stării de șah
+                         - README
+Theodor-Alin Oprea: - mutări rege (cu rocadă)
+                    - selecția mutării viitoare
+                    - promovari piese (q/r/n/b)
+                    - README
+Dorian-Alexandru Verna: - update mutări pion
+                        - tratarea situației en-passant
+                        - mutari cal
+                        - README
+Răzvan-Nicolae Vîrtan: - mutări tură
+                       - mutări regină
+                       - mutări nebun
+                       - README
+
+--------------- Etapa 3 ---------------
+
+1) Logica de mutare
+
+Pentru a alege cea mai buna mutare posibila utilizam functia nextMove din clasa Board.java care
+apeleaza functia minimax cu un depth prestabilit iar in functie de valoarea returnata avem 2
+cazuri:
+a gasit o miscare => se apeleaza functia de updatare a board-ului intern si se afiseaza miscarea
+la stdout pt a ajunge la xboard
+nu a gasit o miscare => resign
+
+2) Logica minmax
+
+Pentru a realiza algoritmul minmax (cu optimizarea aferenta alfa - beta pruning) am facut o functie
+denumita minmax in clasa Board.java care ia o matrice de piece (starea curenta a jocului), culoarea
+cu care joaca botul, tipul de player (min sau max), adancimea la care a ajuns, numarul de sahuri
+date la negru si cel de sahuri date la alb si intoarce o evaluare (tuplu de valoare a mutarii si
+miscarea pe care sa o faca botul). In cadrul functiei se verifica daca s-a ajuns la adancimea
+dorita, daca da se intoarce evaluarea pe starea respectiva, daca nu, se genereaza toate starile
+posibile si se apeleaza recursiv pe fiecare noua stare (daca e min se cauta extragerea minimului
+din starile noi si daca e max se extrage maximul). Am implementat de asemenea si optimizarea alfa
+beta pruning.
+
+3) Logica generare moves
+
+Pentru a genera toate miscarile de la o anumita stare data iteram prin toata matricea de piese,
+extragem piesele de fiecare fel si iteram prin acestea (in functie de culoare) si adaugam intr-un
+vector de miscari pe care il dam mai departe algoritmului minmax.
+
+4) Euristica
+
+Pentru euristica am considerat 2 elemente majore:
+- costul / scorul pieselor, fiecare piesa are un cost asociat iar intr-o stare anume numaram
+piesele si le calculam valorile, adunand piesele noastre si scazand scorul pieselor lor, 10
+pentru pion, 30 pentru nebun si cal, 50 pentru tura si 90 pentru regina, regele fiind tratat
+separat
+- Sahuri, avem 9 cazuri, egalitate de sahuri, diferenta de un sah si diferenta de 2 sahuri, cazul
+in care se ajunge la 3 sahuri fiind tratat separat. La egalitate de sahuri evaluam starea cu 0,
+la avans de 1 sah, 7 sau -7, daca avantajul este pentru noi, si la un avantaj de 2 sahuri, 25 sau
+-25, depinzand pentru cine e scorul.
+
+Am mai avut cateva idei de adaugat la euristica care insa nu s-au dovedit foarte eficiente asa ca
+am renuntat la ele:
+- cat de aproape de margine este un pion (pentru a ajunge sa se schimbe)
+- cat de aproape sunt piesele de rege (pentru a se apara mai bine)
+
+5) Surse de inspiratie:
+
+- Laborator de minmax
+- Euristica gasita pe stackexchange:
+https://chess.stackexchange.com/questions/18903/how-do-computers-play-three-check-chess
+
+6) Taskuri implementate:
+
+Alexandru-Gabriel Bejan: - functia de calcul a euristicii
+                         - minmax
+                         - alfa-beta
+                         - refactoring generateBoard
+
+Theodor-Alin Oprea: - generateMoves
+                    - euristica
+                    - refactoring utilizare minmax
+                    - README
+
+Dorian-Alexandru Verna: - minmax
+                        - euristica
+                        - alfa-beta
+
+Razvan-Nicolae Virtan: - minmax
+                       - alfa-beta
+                       - euristica
+                       
